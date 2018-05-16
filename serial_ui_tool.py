@@ -13,9 +13,10 @@ import serial.tools.list_ports
 import threading
 
 import func
+from res import images_qr
 
 def getProgVer():
-    return 'V1.001'
+    return 'V1.002'
 
 def getNowStr(isCompact=True, isMill=False):
     now = datetime.datetime.now()
@@ -71,7 +72,8 @@ class MainWindow(QtWidgets.QWidget):
             self.ui.cob_Com.addItem(port[0])
         self.ser = createSerial(self.ui.cob_Com.currentText())
         self.ui.pb_OpenOrClose.setText(getTxt('openPort'))
-        self.ui.lbl_Com.setPixmap(QtGui.QPixmap("ico/off.png"))
+        # self.ui.lbl_Com.setPixmap(QtGui.QPixmap("ico/off.png"))
+        self.ui.lbl_Com.setPixmap(QtGui.QPixmap(":/ico/off.png"))
         self.ui.te_Recv.setReadOnly(True)
         self.ui.lbl_Status.setText('')
 
@@ -88,6 +90,16 @@ class MainWindow(QtWidgets.QWidget):
         self.ui.sp_Station.setRange(1, 63)
         self.ui.sp_Station.setToolTip('Station')
 
+        QtWidgets.QWidget.setTabOrder(self.ui.cob_Com, self.ui.pb_OpenOrClose)
+        QtWidgets.QWidget.setTabOrder(self.ui.pb_OpenOrClose, self.ui.chk_HexRecv)
+        QtWidgets.QWidget.setTabOrder(self.ui.chk_HexRecv, self.ui.pb_ClearRecv)
+        QtWidgets.QWidget.setTabOrder(self.ui.pb_ClearRecv, self.ui.sp_CircleT)
+        QtWidgets.QWidget.setTabOrder(self.ui.sp_CircleT, self.ui.cob_UpDown)
+        QtWidgets.QWidget.setTabOrder(self.ui.cob_UpDown, self.ui.sp_Station)
+        QtWidgets.QWidget.setTabOrder(self.ui.sp_Station, self.ui.pb_MakeStation)
+        QtWidgets.QWidget.setTabOrder(self.ui.pb_MakeStation, self.ui.chk_HexSend)
+        QtWidgets.QWidget.setTabOrder(self.ui.chk_HexSend, self.ui.pb_Send)
+        QtWidgets.QWidget.setTabOrder(self.ui.pb_Send, self.ui.cob_Com)
 
         self.show()
 
@@ -102,18 +114,18 @@ class MainWindow(QtWidgets.QWidget):
                 self.timerStatus.start(3000)
             if self.ser.isOpen():
                 self.ui.pb_OpenOrClose.setText(getTxt('closePort'))
-                self.ui.lbl_Com.setPixmap(QtGui.QPixmap("ico/on.png"))
+                self.ui.lbl_Com.setPixmap(QtGui.QPixmap(":/ico/on.png"))
                 t = threading.Thread(target=portRecvProc, args = (self.ser, self.sig_portRecv))
                 t.start()
         else:
             self.ser.close()
             self.ui.pb_OpenOrClose.setText(getTxt('openPort'))
-            self.ui.lbl_Com.setPixmap(QtGui.QPixmap("ico/off.png"))
+            self.ui.lbl_Com.setPixmap(QtGui.QPixmap(":/ico/off.png"))
 
     def refresh_UI_Recv(self, b):
         if self.ui.chk_HexRecv.isChecked():
             s1 = func.buf2hexstr(b)
-            s2 = '[<font color="red">' + getNowStr(False, True) + '</font>] '
+            s2 = '[<font color="red">' + getNowStr(False, True) + '</font>] %04u: ' % len(b)
             s = s2 + s1
             self.ui.te_Recv.append(s) #换行追加
         else:
@@ -167,10 +179,19 @@ class MainWindow(QtWidgets.QWidget):
 
     def keyPressEvent(self, ev):
         print('keyPressEvent, ev = ' + str(ev.modifiers()) + ', ' + hex(ev.key()))
-        if ev.modifiers() == Qt.ControlModifier and ev.key() == Qt.Key_Return:
+        if ev.key() == Qt.Key_Return:
             print('Enter Key')
-            if QtWidgets.QWidget.focusWidget(self) == self.ui.te_Send:
-                self.on_pb_Send_Clicked()
+            if ev.modifiers() == Qt.ControlModifier:
+                print('Ctrl Key')
+                if QtWidgets.QWidget.focusWidget(self) == self.ui.te_Send:
+                    self.on_pb_Send_Clicked()
+            else:
+                curWidg = QtWidgets.QWidget.focusWidget(self)
+                if curWidg == self.ui.sp_CircleT \
+                        or curWidg == self.ui.sp_Station \
+                        or curWidg == self.ui.cob_UpDown:
+                    self.on_pb_MakeStation_Clicked()
+
 
     def closeEvent(self, ev):
         if self.ser.isOpen():

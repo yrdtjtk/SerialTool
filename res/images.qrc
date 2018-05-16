@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="/" >
+    <file>ico/on.png</file>
+    <file>ico/off.png</file>
+  </qresource>
+</RCC>
