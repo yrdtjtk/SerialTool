@@ -1,0 +1,1 @@
+pyuic5 -o ui_serial_tool.py serial_tool.ui
